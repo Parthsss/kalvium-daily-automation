@@ -2,7 +2,7 @@ name: Kalvium Daily Report
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # Mon–Fri at 4:00 PM IST (10:30 AM UTC)
+    - cron: '0 18 * * 1-5'   # Mon–Fri at 4:00 PM IST (10:30 AM UTC)
   workflow_dispatch:
 
 jobs:
