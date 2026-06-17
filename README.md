@@ -67,6 +67,8 @@ Run the login script to save your Google session:
 
 ```bash
 node login.js
+# OR
+npm run login
 ```
 
 **Follow the prompts:**
@@ -78,7 +80,19 @@ node login.js
 
 This creates `auth.json` with your session data.
 
-### Step 3: Configure GitHub Secrets
+### Step 3: Prepare Secret for GitHub
+
+Run the helper script to get properly formatted JSON:
+
+```bash
+node prepare-secret.js
+# OR
+npm run prepare-secret
+```
+
+This will output a minified JSON that's ready to paste into GitHub Secrets.
+
+### Step 4: Configure GitHub Secrets
 
 Go to your repository → **Settings** → **Secrets and variables** → **Actions**
 
@@ -167,6 +181,36 @@ kalvium-daily-automation/
 ---
 
 ## 🔧 Troubleshooting
+
+### ⚠️ Authentication Expired (Most Common Issue)
+
+**Error**: `❌ Not logged in - auth.json may be expired`
+
+**Why it happens**: Google OAuth sessions expire after 24 hours to 7 days for security.
+
+**Solution**:
+```bash
+# Step 1: Regenerate auth
+node login.js
+
+# Step 2: Get the properly formatted secret
+node prepare-secret.js
+# OR
+npm run prepare-secret
+
+# Step 3: Copy the output between ---START--- and ---END---
+
+# Step 4: Update GitHub Secret
+# Go to Settings → Secrets → AUTH_STATE → Update
+# Paste the copied content (single line, no extra spaces)
+
+# Step 5: Test locally (optional)
+npm start
+```
+
+**Prevention**: Set a calendar reminder to refresh auth weekly, or wait for the email notification when it fails.
+
+---
 
 ### Authentication Issues
 

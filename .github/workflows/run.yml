@@ -23,6 +23,15 @@ jobs:
         run: npm start
         env:
           AUTH_STATE: ${{ secrets.AUTH_STATE }}
+        continue-on-error: true
+        id: automation
+
+      - name: Check if auth expired
+        if: failure() && steps.automation.outcome == 'failure'
+        run: |
+          if grep -q "Not logged in" <<< "${{ steps.automation.outputs.stdout }}"; then
+            echo "::warning::Authentication expired. Please regenerate auth.json and update AUTH_STATE secret."
+          fi
 
       - name: Upload screenshots on failure
         if: failure()

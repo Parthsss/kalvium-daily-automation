@@ -25,13 +25,40 @@ Some implementation dependencies still need confirmation before moving ahead ful
   try {
     console.log('🚀 Starting automation...');
     
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--disable-blink-features=AutomationControlled']
+    });
     console.log('✅ Browser launched');
 
+    let authState;
+    
+    if (process.env.AUTH_STATE) {
+      try {
+        // Try to parse AUTH_STATE from environment
+        const authString = process.env.AUTH_STATE.trim();
+        authState = JSON.parse(authString);
+        console.log('✅ Loaded auth from AUTH_STATE environment variable');
+      } catch (parseError) {
+        console.error('❌ Failed to parse AUTH_STATE:', parseError.message);
+        console.error('First 100 chars:', process.env.AUTH_STATE.substring(0, 100));
+        throw new Error('AUTH_STATE secret is malformed. Please ensure it contains valid JSON from auth.json');
+      }
+    } else {
+      // Fallback to local auth.json file
+      const fs = require('fs');
+      if (fs.existsSync('./auth.json')) {
+        authState = JSON.parse(fs.readFileSync('./auth.json', 'utf-8'));
+        console.log('✅ Loaded auth from local auth.json file');
+      } else {
+        throw new Error('No AUTH_STATE environment variable or auth.json file found. Please run: node login.js');
+      }
+    }
+
     const context = await browser.newContext({
-      storageState: process.env.AUTH_STATE
-        ? JSON.parse(process.env.AUTH_STATE)
-        : undefined
+      storageState: authState,
+      viewport: { width: 1920, height: 1080 },
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     });
     console.log('✅ Auth context loaded');
 
@@ -40,9 +67,10 @@ Some implementation dependencies still need confirmation before moving ahead ful
     // Navigate with more robust waiting
     console.log('📡 Navigating to Kalvium portal...');
     await page.goto('https://kalvium.community/internships', {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
       timeout: 60000
     });
+    await page.waitForLoadState('load');
     console.log('✅ Page loaded');
     
     // Take screenshot for debugging
@@ -53,12 +81,30 @@ Some implementation dependencies still need confirmation before moving ahead ful
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(5000);
 
-    // Check if we're logged in
-    const pageContent = await page.content();
-    if (pageContent.includes('Continue with Google') || pageContent.includes('Sign in')) {
+    // Check authentication by trying to find expected logged-in elements
+    const pageTitle = await page.title();
+    const currentUrl = page.url();
+    
+    console.log(`📄 Page title: ${pageTitle}`);
+    console.log(`🔗 Current URL: ${currentUrl}`);
+    
+    // Check if redirected to auth/login page
+    if (currentUrl.includes('/login') || currentUrl.includes('/auth')) {
+      console.error('❌ Redirected to login page - session expired');
       throw new Error('❌ Not logged in - auth.json may be expired. Please re-run login.js');
     }
-    console.log('✅ Authentication verified');
+    
+    console.log('✅ On internships page - proceeding...');
+
+    // Save page HTML for debugging
+    const pageHtml = await page.content();
+    const fs = require('fs');
+    fs.writeFileSync('debug-page.html', pageHtml);
+    console.log('💾 Page HTML saved to debug-page.html');
+
+    // List all buttons for debugging
+    const buttons = await page.locator('button').allTextContents();
+    console.log('🔘 Found buttons:', buttons.slice(0, 20)); // First 20 buttons
 
     // Try multiple selectors for the Complete button
     console.log('🔍 Looking for Complete button...');
