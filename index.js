@@ -1,21 +1,26 @@
 const { chromium } = require('@playwright/test');
 
 const BACKUP_TASK = `
-📋 Tasks completed today
-Worked on refining product requirements and aligning them with current implementation flow.
-Reviewed and analyzed Twilio integration requirements for product communication workflows.
-Explored and understood agent prompting logic and its expected behavior within the product.
-Performed code-level analysis to better understand feature flow and implementation dependencies.
-Supported client onboarding by reviewing checklist progress and pending setup items.
-Conducted a live product delivery/demo session and walked the client through key workflows.
-Captured client feedback and noted technical/actionable improvements for follow-up.
-⚡ Challenges encountered and how you overcame them
-Some parts of the implementation flow were unclear initially — resolved by analyzing the codebase and clarifying logic internally.
-Twilio-related workflow understanding required deeper context — addressed by reviewing integration points and expected use cases.
-Clients needed support during onboarding and delivery — handled through clear walkthroughs and real-time guidance.
-🚧 Blockers faced
-Waiting on a few client-side inputs and configuration details to complete the final setup.
-Some implementation dependencies still need confirmation before moving ahead fully.
+📋 Tasks Completed Today
+
+- Refined product requirements and aligned them with the current implementation flow
+- Reviewed and analyzed Twilio integration requirements for product communication workflows
+- Explored agent prompting logic and validated expected behavior within the product
+- Conducted code-level analysis to better understand feature flow and implementation dependencies
+- Supported client onboarding by reviewing checklist progress and pending setup items
+- Led a live product delivery/demo session, walking the client through key workflows
+- Captured client feedback and logged technical/actionable improvements for follow-up
+
+⚡ Challenges Encountered & Resolutions
+
+- Certain implementation flows were initially unclear — resolved through direct codebase analysis and internal logic clarification
+- Twilio workflow understanding required deeper context — addressed by reviewing integration points and expected use cases
+- Clients needed additional support during onboarding and delivery — handled via clear walkthroughs and real-time guidance
+
+🚧 Blockers
+
+- Awaiting client-side inputs and configuration details to finalize setup
+- Some implementation dependencies still need confirmation before proceeding further
 `.trim();
 
 (async () => {
@@ -127,10 +132,12 @@ Some implementation dependencies still need confirmation before moving ahead ful
     await combobox.click();
     console.log('✅ Dropdown opened');
 
-    // Select first option
+    // Select "Working on-site (Company location)" option
     await page.waitForSelector('[role="option"]', { timeout: 10000 });
-    await page.locator('[role="option"]').first().click();
-    console.log('✅ Selected option');
+    const onsiteOption = page.locator('[role="option"]', { hasText: 'Working on-site' });
+    await onsiteOption.waitFor({ state: 'visible', timeout: 10000 });
+    await onsiteOption.click();
+    console.log('✅ Selected "Working on-site" option');
 
     // Fill the editor
     console.log('✏️ Filling report...');
