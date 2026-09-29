@@ -26,10 +26,12 @@ jobs:
         id: automation
 
       - name: Check if auth expired
+        id: auth_check
         if: failure() && steps.automation.outcome == 'failure'
         run: |
           if grep -q "Not logged in" automation.log; then
             echo "::error::Authentication expired. Please regenerate auth.json and update AUTH_STATE secret."
+            echo "expired=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Upload screenshots on failure
@@ -51,11 +53,12 @@ jobs:
           server_port: 587
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: ❌ Kalvium Daily Report FAILED
+          subject: ${{ steps.auth_check.outputs.expired == 'true' && '🔐 Kalvium login EXPIRED - journal not submitted' || '❌ Kalvium Daily Report FAILED' }}
           to: ${{ secrets.EMAIL_TO }}
           from: Kalvium Automation <${{ secrets.EMAIL_USERNAME }}>
           body: |
-            ❌ Kalvium daily automation failed.
+            ❌ Kalvium daily automation failed. Today's journal was NOT submitted.
+            ${{ steps.auth_check.outputs.expired == 'true' && 'Reason: your Kalvium login session has expired. To fix: run `node login.js`, then update the secret with: node -e "process.stdout.write(JSON.stringify(require(''./auth.json'')))" | gh secret set AUTH_STATE' || '' }}
             Repo: ${{ github.repository }}
             Workflow: ${{ github.workflow }}
             Branch: ${{ github.ref_name }}
