@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/parthshah/Desktop/Workspace/Workspace/Journal Automation/kalvium-daily-automation/**)"
+    ]
+  }
+}

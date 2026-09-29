@@ -20,17 +20,16 @@ jobs:
       - run: npx playwright install chromium
 
       - name: Run automation
-        run: npm start
+        run: set -o pipefail; npm start 2>&1 | tee automation.log
         env:
           AUTH_STATE: ${{ secrets.AUTH_STATE }}
-        continue-on-error: true
         id: automation
 
       - name: Check if auth expired
         if: failure() && steps.automation.outcome == 'failure'
         run: |
-          if grep -q "Not logged in" <<< "${{ steps.automation.outputs.stdout }}"; then
-            echo "::warning::Authentication expired. Please regenerate auth.json and update AUTH_STATE secret."
+          if grep -q "Not logged in" automation.log; then
+            echo "::error::Authentication expired. Please regenerate auth.json and update AUTH_STATE secret."
           fi
 
       - name: Upload screenshots on failure
@@ -40,6 +39,8 @@ jobs:
           name: debug-screenshots
           path: |
             debug-*.png
+            debug-page.html
+            automation.log
           retention-days: 7
 
       - name: Send failure email

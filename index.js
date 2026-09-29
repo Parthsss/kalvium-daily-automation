@@ -93,9 +93,11 @@ const BACKUP_TASK = `
     console.log(`📄 Page title: ${pageTitle}`);
     console.log(`🔗 Current URL: ${currentUrl}`);
     
-    // Check if redirected to auth/login page
-    if (currentUrl.includes('/login') || currentUrl.includes('/auth')) {
-      console.error('❌ Redirected to login page - session expired');
+    // Check if redirected to auth/login page, or shown the login screen in place
+    // (Kalvium keeps the /internships URL and renders "Continue with Google" when the session expires)
+    const loginPromptVisible = await page.getByText('Continue with Google').first().isVisible().catch(() => false);
+    if (currentUrl.includes('/login') || currentUrl.includes('/auth') || loginPromptVisible) {
+      console.error('❌ Login screen shown - session expired');
       throw new Error('❌ Not logged in - auth.json may be expired. Please re-run login.js');
     }
     
