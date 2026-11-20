@@ -2,7 +2,7 @@ name: Kalvium Daily Report
 
 on:
   schedule:
-    - cron: '30 12 * * 1-5'   # Mon–Fri at 6:00 PM IST (12:30 PM UTC)
+    - cron: '17 12 * * 1-5'  # 5:47 PM IST, Mon–Fri
   workflow_dispatch:
 
 jobs:
@@ -18,6 +18,14 @@ jobs:
 
       - run: npm install
       - run: npx playwright install chromium
+
+      - name: Log execution time
+        run: |
+          echo "Scheduled event: ${{ github.event.schedule }}"
+          echo "UTC time:"
+          date -u
+          echo "Runner local time:"
+          date
 
       - name: Run automation
         run: set -o pipefail; npm start 2>&1 | tee automation.log
