@@ -10,24 +10,41 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
+      # GitHub often starts scheduled runs many hours late (seen: 8–12h, landing at 2–5 AM IST).
+      # Skip scheduled runs that fall outside the journal window so we never submit at the wrong time.
+      # Manual (workflow_dispatch) runs always proceed.
+      - name: Check IST time window
+        id: guard
+        run: |
+          echo "Scheduled event: ${{ github.event.schedule }}"
+          echo "UTC time: $(date -u)"
+          IST_HOUR=$(TZ=Asia/Kolkata date +%H)
+          IST_DOW=$(TZ=Asia/Kolkata date +%u)   # 1=Mon … 7=Sun
+          echo "IST time: $(TZ=Asia/Kolkata date)"
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          elif [ "$IST_DOW" -le 5 ] && [ "$IST_HOUR" -ge 17 ] && [ "$IST_HOUR" -le 23 ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Scheduled run started late (IST $(TZ=Asia/Kolkata date +%H:%M), weekday $IST_DOW) — outside the 17:00–23:59 Mon–Fri window. Skipping."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4.2.2
+        if: steps.guard.outputs.ok == 'true'
 
       - uses: actions/setup-node@v4.1.0
+        if: steps.guard.outputs.ok == 'true'
         with:
           node-version: 18
 
       - run: npm install
+        if: steps.guard.outputs.ok == 'true'
       - run: npx playwright install chromium
-
-      - name: Log execution time
-        run: |
-          echo "Scheduled event: ${{ github.event.schedule }}"
-          echo "UTC time:"
-          date -u
-          echo "Runner local time:"
-          date
+        if: steps.guard.outputs.ok == 'true'
 
       - name: Run automation
+        if: steps.guard.outputs.ok == 'true'
         run: set -o pipefail; npm start 2>&1 | tee automation.log
         env:
           AUTH_STATE: ${{ secrets.AUTH_STATE }}
